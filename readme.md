@@ -4,14 +4,14 @@
 
 ---
 
-## 📌 Descripción
-Tool Rent App es una aplicación desarrollada con **Spring Boot** y **MySQL** para la gestión de arriendo de herramientas.
+## 📌 Description
+Tool Rent App is a web application developed with **Spring Boot** and **MySQL** for tool leasing management.
 
 ---
 
-## ✅ Requisitos previos
+## ✅ Pre-requisites
 
-Antes de ejecutar el proyecto, asegúrate de tener instalado:
+Before run the project, make sure to install:
 
 - **Spring Boot 3.5.5**
   ```bash
