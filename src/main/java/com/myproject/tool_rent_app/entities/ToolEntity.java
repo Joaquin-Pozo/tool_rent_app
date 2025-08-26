@@ -35,4 +35,6 @@ public class ToolEntity {
 
     private int stock;
 
+    private boolean active;
+
 }
