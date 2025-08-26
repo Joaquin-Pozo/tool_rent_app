@@ -1,0 +1,26 @@
+package com.myproject.tool_rent_app.entities;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
+
+@Entity
+@Table(name = "clients")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ClientEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(unique = true, nullable = false)
+    private int id;
+
+    @Column(unique = true, nullable = false)
+    private String name;
+
+    // True = active, False = restricted
+    @ColumnDefault("true")
+    private boolean active;
+}
