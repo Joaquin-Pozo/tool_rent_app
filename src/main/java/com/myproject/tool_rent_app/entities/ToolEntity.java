@@ -19,6 +19,10 @@ public class ToolEntity {
     @Column(unique = true, nullable = false)
     private Long id;
 
+    // For identification purposes, this refers to the concept of SKU
+    @Column(unique = true, nullable = false)
+    private String toolIdentifier;
+
     @Column(nullable = false)
     private String name;
 
