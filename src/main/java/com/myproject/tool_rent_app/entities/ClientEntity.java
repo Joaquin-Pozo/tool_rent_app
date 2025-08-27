@@ -17,8 +17,12 @@ public class ClientEntity {
     @Column(unique = true, nullable = false)
     private int id;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false)
     private String name;
+
+    // For identification purposes, this refers to the concept of RUT
+    @Column(unique = true, nullable = false)
+    private String documentNumber;
 
     // True = active, False = restricted
     @ColumnDefault("true")
