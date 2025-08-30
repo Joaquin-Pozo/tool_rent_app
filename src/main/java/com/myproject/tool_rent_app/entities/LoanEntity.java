@@ -18,13 +18,23 @@ public class LoanEntity {
     @Column(unique = true, nullable = false)
     private Long id;
 
-    // Client identifier
-    private String documentNumber;
+    // Client -> Loan
+    @ManyToOne
+    @JoinColumn(name = "client_id", nullable = false)
+    private ClientEntity client;
 
-    // Tool identifier
-    private String toolIdentifier;
+    // Tool -> Loan
+    @ManyToOne
+    @JoinColumn(name = "tool_id", nullable = false)
+    private ToolEntity tool;
 
     private Date deliveryDate;
 
+    @Column(nullable = false)
     private Date returnDate;
+
+    // In progress, Completed, Overdue (the client has not paid yet)
+    @ManyToOne
+    @JoinColumn(name = "state_id", nullable = false)
+    private LoanStateEntity currentState;
 }
