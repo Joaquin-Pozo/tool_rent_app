@@ -24,7 +24,12 @@ public class ClientEntity {
     @Column(unique = true, nullable = false)
     private String documentNumber;
 
-    // True = active, False = restricted
-    @ColumnDefault("true")
-    private boolean active;
+    // Active, Restricted
+    @ManyToOne
+    @JoinColumn(name = "state_id", nullable = false)
+    private ClientStateEntity currentState;
+
+    // Client -> Loan
+    @OneToMany(mappedBy = "client")
+    private java.util.List<LoanEntity> loans;
 }
