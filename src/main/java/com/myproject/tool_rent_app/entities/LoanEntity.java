@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 @Entity
@@ -32,6 +34,9 @@ public class LoanEntity {
 
     @Column(nullable = false)
     private Date returnDate;
+
+    @ColumnDefault("5000")
+    private BigDecimal dailyFineRate;
 
     // In progress, Completed, Overdue (the client has not paid yet)
     @ManyToOne
