@@ -33,12 +33,16 @@ public class ToolEntity {
     private BigDecimal replacementCost;
 
     // Available, Loaned, Under repair, Unserviceable
-    private String currentState;
+    @ManyToOne
+    @JoinColumn(name = "state_id", nullable = false)
+    private ToolStateEntity currentState;
 
     private BigDecimal price;
 
     private int stock;
 
-    private boolean active;
+    // Tool -> Loan
+    @OneToMany(mappedBy = "tool")
+    private java.util.List<LoanEntity> loans;
 
 }
