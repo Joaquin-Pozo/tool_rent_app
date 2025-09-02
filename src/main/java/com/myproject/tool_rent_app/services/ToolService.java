@@ -37,6 +37,8 @@ public class ToolService {
         kardex.setMovementDate(LocalDateTime.now());
         kardex.setQuantity(savedTool.getStock());
 
+        kardexRepository.save(kardex);
+
         return savedTool;
     }
 }
