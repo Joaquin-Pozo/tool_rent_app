@@ -29,21 +29,22 @@ public class ToolService {
     KardexTypeRepository kardexTypeRepository;
 
     // RF 1.1: Registrar nuevas herramientas con datos básicos (nombre, categoría, estado
-    // inicial, valor de reposición)
+    // inicial, valor de reposición) -> Actualizar el kardex
     public ToolEntity createTool(ToolEntity tool){
+        String entryType = "Ingreso";
+
+        KardexTypeEntity kardexType = kardexTypeRepository.findByName(entryType);
+
+        // Validación de la existencia en la bd del tipo de kardex 'Ingreso'
+        if (!kardexType.getName().equals(entryType)) {
+            throw new RuntimeException("Tipo de kardex ' " + entryType + "' no encontrado");
+        }
+
         ToolEntity savedTool = toolRepository.save(tool);
 
         KardexEntity kardex = new KardexEntity();
         kardex.setTool(savedTool);
-
-        // Check if kardex type name exists in the DB
-        KardexTypeEntity entryType = kardexTypeRepository.findByName("Ingreso");
-
-        if (entryType == null) {
-            throw new RuntimeException("Tipo de kardex 'Ingreso' no encontrado");
-        }
-
-        kardex.setType(entryType);
+        kardex.setType(kardexType);
         kardex.setMovementDate(LocalDateTime.now());
         kardex.setQuantity(savedTool.getStock());
 
@@ -51,18 +52,40 @@ public class ToolService {
 
         return savedTool;
     }
-    // RF 1.2: Dar de baja herramientas dañadas o en desuso.
+
+    // RF 1.2: Dar de baja herramientas dañadas o en desuso. -> Actualizar el kardex
     public void deleteTool(ToolEntity tool){
-        ToolStateEntity unserviceableState = toolStateRepository.findByName("Dada de baja");
+        String toolState = "Dada de baja";
 
-        if (unserviceableState == null){
-            throw new RuntimeException("Estado 'Dado de baja' no encontrado");
+        ToolStateEntity toolStateEntity = toolStateRepository.findByName(toolState);
+
+        // Validación de la existencia en la bd del estado de herramienta 'Dado de baja'
+        if (!toolStateEntity.getName().equals(toolState)) {
+            throw new RuntimeException("Estado '" + toolState + "' no encontrado");
         }
 
-        if (tool.getCurrentState().equals(unserviceableState)) {
+        // Validación de que la herramienta por eliminar tenga el estado 'Dada de baja'
+        if (tool.getCurrentState().getName().equals(toolState)) {
+            String entryType = "Baja";
+
+            KardexTypeEntity kardexType = kardexTypeRepository.findByName(entryType);
+
+            // Validación de la existencia en la bd del tipo de kardex 'Baja'
+            if (!kardexType.getName().equals(entryType)) {
+                throw new RuntimeException("Tipo de kardex '" +  entryType + "' no encontrado");
+            }
+
+            // Ingresa un nuevo movimiento en el kardex
+            KardexEntity kardex = new KardexEntity();
+            kardex.setTool(tool);
+            kardex.setType(kardexType);
+            kardex.setMovementDate(LocalDateTime.now());
+            kardex.setQuantity(tool.getStock());
+
+            kardexRepository.save(kardex);
+
             toolRepository.delete(tool);
-        } else {
-            throw new RuntimeException("La herramienta no está dada de baja, no se puede eliminar");
         }
+        throw new RuntimeException("La herramienta no está '" + toolState + "', no se puede eliminar");
     }
 }
