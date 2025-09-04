@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "loans")
@@ -30,10 +30,10 @@ public class LoanEntity {
     @JoinColumn(name = "tool_id", nullable = false)
     private ToolEntity tool;
 
-    private Date deliveryDate;
+    private LocalDateTime deliveryDate;
 
     @Column(nullable = false)
-    private Date returnDate;
+    private LocalDateTime returnDate;
 
     @ColumnDefault("5000")
     private BigDecimal dailyFineRate;

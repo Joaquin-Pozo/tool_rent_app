@@ -19,11 +19,10 @@ public class ClientEntity {
     @Column(nullable = false)
     private String name;
 
-    // For identification purposes, this refers to the concept of RUT
     @Column(unique = true, nullable = false)
     private String documentNumber;
 
-    // Active, Restricted
+    // Activo, Restringido
     @ManyToOne
     @JoinColumn(name = "state_id", nullable = false)
     private ClientStateEntity currentState;
