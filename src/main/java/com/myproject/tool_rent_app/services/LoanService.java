@@ -25,7 +25,8 @@ public class LoanService {
     @Autowired
     private ClientRepository clientRepository;
 
-
+    // RF2.1 Registrar un préstamo asociando cliente y herramienta, con fecha de entrega y
+    // fecha pactada de devolución. Se actualiza el kardex.
     public LoanEntity registerLoan(LoanEntity loan) {
         String clientState = "Activo";
 
@@ -54,9 +55,8 @@ public class LoanService {
         return loanRepository.save(loan);
     }
 
-    public BigDecimal calculateFine(Long loanId) {
-        BigDecimal fine = BigDecimal.ZERO;
-
+    // RF 2.4 Calcular automáticamente multas por atraso (tarifa diaria).
+    public BigDecimal overdueFine(Long loanId) {
         LoanEntity loanEntity = loanRepository.findByLoanId(loanId);
 
         // Validación de la existencia en la bd del prestamo
@@ -69,9 +69,22 @@ public class LoanService {
 
         if (today.isAfter(returnDate)) {
             long daysLate = ChronoUnit.DAYS.between(returnDate.toLocalDate(), today.toLocalDate());
-            fine = loanEntity.getDailyFineRate().multiply(BigDecimal.valueOf(daysLate));
-            return fine;
+            return loanEntity.getDailyFineRate().multiply(BigDecimal.valueOf(daysLate));
         }
-        return fine;
+        return BigDecimal.ZERO;
+    }
+    // Multa por daño irreparable = valor de reposición de la herramienta.
+    public toolDamagedFine(Long loanId) {
+        LoanEntity loanEntity = loanRepository.findByLoanId(loanId);
+
+        // Validación de la existencia en la bd del prestamo
+        if (loanEntity == null) {
+            throw new RuntimeException("Prestamo no encontrado");
+        }
+
+        String toolState = loanEntity.getTool().getCurrentState().getName();
+
+        if toolState.equals("Dada de baja")
+
     }
 }
