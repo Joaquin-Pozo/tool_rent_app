@@ -14,7 +14,7 @@ public class ClientEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(unique = true, nullable = false)
-    private int id;
+    private Long id;
 
     @Column(nullable = false)
     private String name;
@@ -28,6 +28,7 @@ public class ClientEntity {
     private ClientStateEntity currentState;
 
     // Client -> Loan
+    // Hasta el momento no se ha ocupado este mapeo
     @OneToMany(mappedBy = "client")
     private java.util.List<LoanEntity> loans;
 }

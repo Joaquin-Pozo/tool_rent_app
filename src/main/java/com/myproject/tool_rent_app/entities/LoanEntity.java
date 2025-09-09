@@ -30,6 +30,11 @@ public class LoanEntity {
     @JoinColumn(name = "tool_id", nullable = false)
     private ToolEntity tool;
 
+    // En progreso, Completado, Atrasado
+    @ManyToOne
+    @JoinColumn(name = "state_id", nullable = false)
+    private LoanStateEntity currentState;
+
     private LocalDateTime deliveryDate;
 
     @Column(nullable = false)
@@ -38,8 +43,7 @@ public class LoanEntity {
     @ColumnDefault("5000")
     private BigDecimal dailyFineRate;
 
-    // In progress, Completed, Overdue (the client has not paid yet)
-    @ManyToOne
-    @JoinColumn(name = "state_id", nullable = false)
-    private LoanStateEntity currentState;
+    @Column(name = "damaged", nullable = false)
+    @ColumnDefault("false")
+    private boolean damaged;
 }

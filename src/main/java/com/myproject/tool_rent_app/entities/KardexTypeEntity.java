@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "kardex_type")
+@Table(name = "kardex_types")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

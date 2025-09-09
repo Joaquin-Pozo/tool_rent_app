@@ -4,7 +4,10 @@ import com.myproject.tool_rent_app.entities.LoanEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface LoanRepository extends JpaRepository<LoanEntity,Long> {
-    LoanEntity findByLoanId(Long loanId);
+
+    List<LoanEntity> findByClientId(Long clientId);
 }
