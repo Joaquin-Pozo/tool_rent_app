@@ -10,4 +10,6 @@ import java.util.List;
 public interface LoanRepository extends JpaRepository<LoanEntity,Long> {
 
     List<LoanEntity> findByClientId(Long clientId);
+
+    List<LoanEntity> findByToolIdAndCurrentStateName(Long toolId, String currentStateName);
 }

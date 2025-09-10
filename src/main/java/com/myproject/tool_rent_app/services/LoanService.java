@@ -1,22 +1,14 @@
 package com.myproject.tool_rent_app.services;
 
-import com.myproject.tool_rent_app.entities.ClientStateEntity;
-import com.myproject.tool_rent_app.entities.KardexEntity;
-import com.myproject.tool_rent_app.entities.KardexTypeEntity;
-import com.myproject.tool_rent_app.entities.LoanEntity;
-import com.myproject.tool_rent_app.repositories.ClientRepository;
-import com.myproject.tool_rent_app.repositories.ClientStateRepository;
-import com.myproject.tool_rent_app.repositories.KardexTypeRepository;
-import com.myproject.tool_rent_app.repositories.LoanRepository;
+import com.myproject.tool_rent_app.entities.*;
+import com.myproject.tool_rent_app.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class LoanService {
@@ -28,15 +20,25 @@ public class LoanService {
     private KardexTypeRepository kardexTypeRepository;
 
     @Autowired
+    private ToolRepository toolRepository;
+
+    @Autowired
     private ClientStateRepository clientStateRepository;
 
     @Autowired
     private ClientRepository clientRepository;
+    @Autowired
+    private KardexRepository kardexRepository;
+    @Autowired
+    private LoanStateRepository loanStateRepository;
+    @Autowired
+    private ToolStateRepository toolStateRepository;
 
     // RF2.1 Registrar un préstamo asociando cliente y herramienta, con fecha de entrega y
     // fecha pactada de devolución. Se actualiza el kardex.
     public LoanEntity registerLoan(LoanEntity loan) {
         String activeState = "Activo";
+        String restrictedState = "Restringido";
 
         // Validación del estado 'Activo' del cliente
         String clientState = loan.getClient().getCurrentState().getName();
@@ -44,17 +46,46 @@ public class LoanService {
             throw new RuntimeException("El cliente no se encuentra '" +  activeState + "', no puede registrar un préstamo");
         }
 
-        // Verifica si el cliente esta al dia (no tiene prestamos atrasados o multas pendientes)
         List<LoanEntity> previousLoans = loanRepository.findByClientId(loan.getClient().getId());
 
+        // Verifica que el cliente no tenga más de 5 préstamos activos
+        int count = 0;
+        for (LoanEntity prevLoan: previousLoans) {
+            if (prevLoan.getCurrentState().getName().equals("En progreso")) {
+                count++;
+            }
+        }
+        if (count >= 5) {
+            throw new RuntimeException("El cliente ya tiene 5 préstamos activos");
+        }
+
+        // Verifica si el cliente esta al dia (no tiene prestamos atrasados o multas pendientes)
         for (LoanEntity prevLoan : previousLoans) {
             if (overdueFine(prevLoan.getId()).compareTo(BigDecimal.ZERO) > 0) {
-                throw new RuntimeException("El cliente tiene multas impagas por prestamos atrasados");
+                if (loan.getClient().getCurrentState().getName().equals(activeState)) {
+                    // Si el cliente tiene deuda, actualiza su estado a restringido
+                    ClientStateEntity restrictedClient = clientStateRepository.findByName(restrictedState);
+                    loan.getClient().setCurrentState(restrictedClient);
+                    clientRepository.save(loan.getClient());
+                }
+                throw new RuntimeException("El cliente tiene multas impagas por préstamos atrasados");
             }
 
             if (prevLoan.isDamaged()) {
+                if (loan.getClient().getCurrentState().getName().equals(activeState)) {
+                    // Si el cliente tiene multa, actualiza su estado a restringido
+                    ClientStateEntity restrictedClient = clientStateRepository.findByName(restrictedState);
+                    loan.getClient().setCurrentState(restrictedClient);
+                    clientRepository.save(loan.getClient());
+                }
                 throw new RuntimeException("El cliente tiene una multa por reposición de herramienta dañada");
             }
+        }
+
+        // Verifica que no existan préstamos en curso para la misma herramienta
+        List<LoanEntity> activeLoansForTool = loanRepository.findByToolIdAndCurrentStateName(loan.getTool().getId(), "En progreso");
+        if (!activeLoansForTool.isEmpty()) {
+            throw new RuntimeException("La herramienta ya se encuentra prestada y no ha sido devuelta");
         }
 
         // Validación de disponibilidad de stock de la herramienta
@@ -63,14 +94,27 @@ public class LoanService {
         }
 
         // Validación del estado de la herramienta
-        if (!loan.getTool().getCurrentState().getName().equals("Disponible")) {
-            throw new RuntimeException("La herramienta no se encuentra disponible");
+        if (loan.getTool().getCurrentState().getName().equals("En reparación")) {
+            throw new RuntimeException("La herramienta se encuentra en reparación");
+        }
+        if (loan.getTool().getCurrentState().getName().equals("Dada de baja")) {
+            throw new RuntimeException("La herramienta se encuentra dada de baja");
         }
 
         // Validación de fechas (entrega <= devolucion)
-        if (loan.getReturnDate().isBefore(loan.getReturnDate())) {
+        if (loan.getReturnDate().isBefore(loan.getDeliveryDate())) {
             throw new RuntimeException("La fecha de devolución no puede ser anterior a la fecha de entrega");
         }
+
+        // Actualiza stock y estado de la herramienta
+        ToolStateEntity loaned = toolStateRepository.findByName("Prestada");
+        loan.getTool().setCurrentState(loaned);
+        loan.getTool().setStock(loan.getTool().getStock() - 1);
+        toolRepository.save(loan.getTool());
+
+        // Actualiza estado del préstamo
+        LoanStateEntity inProgress = loanStateRepository.findByName("En progreso");
+        loan.setCurrentState(inProgress);
 
         // Genera un nuevo movimiento del tipo 'Préstamo' en el Kardex
         KardexTypeEntity kardexType = kardexTypeRepository.findByName("Préstamo");
@@ -82,7 +126,11 @@ public class LoanService {
         newKardex.setQuantity(1);
         newKardex.setMovementDate(LocalDateTime.now());
 
-        return loanRepository.save(loan);
+        LoanEntity savedLoan = loanRepository.save(loan);
+
+        kardexRepository.save(newKardex);
+
+        return savedLoan;
     }
 
     // RF 2.4 Calcular automáticamente multas por atraso (tarifa diaria).
@@ -116,4 +164,24 @@ public class LoanService {
 
     }
     */
+
+    public void returnLoan(LoanEntity loan) {
+        BigDecimal fine = overdueFine(loan.getId());
+        // Aplica multa si existe un atraso en la devolución del préstamo
+        if (fine.compareTo(BigDecimal.ZERO) > 0) {
+            loan.setTotalFine(loan.getTotalFine().add(fine));
+        }
+        // Aplica multa si existe un daño en la herramienta, actualiza su estado y el kardex
+        if (loan.isDamaged()) {
+            loan.setTotalFine(loan.getTotalFine().add(loan.getTool().getReplacementCost()));
+            ToolStateEntity toolState = toolStateRepository.findByName("En reparación");
+            loan.getTool().setCurrentState(toolState);
+            toolRepository.save(loan.getTool());
+        }
+
+
+
+
+
+    }
 }

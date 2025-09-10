@@ -43,6 +43,8 @@ public class LoanEntity {
     @ColumnDefault("5000")
     private BigDecimal dailyFineRate;
 
+    private BigDecimal totalFine;
+
     @Column(name = "damaged", nullable = false)
     @ColumnDefault("false")
     private boolean damaged;

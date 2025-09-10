@@ -17,5 +17,5 @@ public class ToolStateEntity {
     private Long id;
 
     @Column(unique = true, nullable = false)
-    private String name; // Available, Loaned, Under repair, Unserviceable
+    private String name; // Disponible, Prestada, En reparación, Dada de baja
 }
