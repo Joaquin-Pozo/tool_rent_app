@@ -68,4 +68,15 @@ public class ToolService {
         // Elimina la herramienta (Dada de baja)
         toolRepository.delete(tool);
     }
+    // Modifica el estado actual de una herramienta
+    public void changeToolState(ToolEntity tool, String newState) {
+        ToolStateEntity toolState = toolStateRepository.findByName(newState);
+        tool.setCurrentState(toolState);
+        toolRepository.save(tool);
+    }
+
+    // Obtiene una herramienta especifica
+    public ToolEntity getToolByName(String name){
+        return toolRepository.findByName(name);
+    }
 }

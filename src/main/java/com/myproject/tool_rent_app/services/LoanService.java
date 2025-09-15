@@ -3,6 +3,7 @@ package com.myproject.tool_rent_app.services;
 import com.myproject.tool_rent_app.entities.*;
 import com.myproject.tool_rent_app.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -23,14 +24,23 @@ public class LoanService {
     private ToolRepository toolRepository;
 
     @Autowired
+    private ToolService toolService;
+
+    @Autowired
     private ClientStateRepository clientStateRepository;
 
     @Autowired
     private ClientRepository clientRepository;
+
+    @Autowired
+    private ClientService clientService;
+
     @Autowired
     private KardexRepository kardexRepository;
+
     @Autowired
     private LoanStateRepository loanStateRepository;
+
     @Autowired
     private ToolStateRepository toolStateRepository;
 
@@ -85,7 +95,7 @@ public class LoanService {
         // Verifica que no existan préstamos en curso para la misma herramienta
         List<LoanEntity> activeLoansForTool = loanRepository.findByToolIdAndCurrentStateName(loan.getTool().getId(), "En progreso");
         if (!activeLoansForTool.isEmpty()) {
-            throw new RuntimeException("La herramienta ya se encuentra prestada y no ha sido devuelta");
+            throw new RuntimeException("La herramienta solicitada ya se encuentra prestada y no ha sido devuelta");
         }
 
         // Validación de disponibilidad de stock de la herramienta
@@ -95,10 +105,10 @@ public class LoanService {
 
         // Validación del estado de la herramienta
         if (loan.getTool().getCurrentState().getName().equals("En reparación")) {
-            throw new RuntimeException("La herramienta se encuentra en reparación");
+            throw new RuntimeException("La herramienta solicitada se encuentra en reparación");
         }
         if (loan.getTool().getCurrentState().getName().equals("Dada de baja")) {
-            throw new RuntimeException("La herramienta se encuentra dada de baja");
+            throw new RuntimeException("La herramienta solicitada se encuentra dada de baja");
         }
 
         // Validación de fechas (entrega <= devolucion)
@@ -148,40 +158,67 @@ public class LoanService {
         }
         return BigDecimal.ZERO;
     }
-    // Multa por daño irreparable = valor de reposición de la herramienta.
-    /*
-    public toolDamagedFine(Long loanId) {
-        LoanEntity loanEntity = loanRepository.findByLoanId(loanId);
 
-        // Validación de la existencia en la bd del prestamo
-        if (loanEntity == null) {
-            throw new RuntimeException("Prestamo no encontrado");
+    // Actualiza automáticamente el estado de los préstamos atrasados
+    @Scheduled(fixedDelay = 5000)
+    public void updateOverdueLoans() {
+        List<LoanEntity> loanEntities = loanRepository.findAll();
+        LocalDateTime today = LocalDateTime.now();
+        for (LoanEntity loanEntity : loanEntities) {
+            LocalDateTime returnDate = loanEntity.getReturnDate();
+            String currentLoanState =  loanEntity.getCurrentState().getName();
+            if (today.isAfter(returnDate) && currentLoanState.equals("En progreso")) {
+                LoanStateEntity newLoanState = loanStateRepository.findByName("Atrasado");
+                loanEntity.setCurrentState(newLoanState);
+                loanRepository.save(loanEntity);
+            }
         }
-
-        String toolState = loanEntity.getTool().getCurrentState().getName();
-
-        if toolState.equals("Dada de baja")
-
     }
-    */
 
-    public void returnLoan(LoanEntity loan) {
+    public LoanEntity returnLoan(LoanEntity loan) {
         BigDecimal fine = overdueFine(loan.getId());
+        ToolEntity tool = loan.getTool();
+        ClientEntity client = loan.getClient();
         // Aplica multa si existe un atraso en la devolución del préstamo
         if (fine.compareTo(BigDecimal.ZERO) > 0) {
             loan.setTotalFine(loan.getTotalFine().add(fine));
+            clientService.changeClientState(client, "Restringido");
         }
         // Aplica multa si existe un daño en la herramienta, actualiza su estado y el kardex
         if (loan.isDamaged()) {
             loan.setTotalFine(loan.getTotalFine().add(loan.getTool().getReplacementCost()));
-            ToolStateEntity toolState = toolStateRepository.findByName("En reparación");
-            loan.getTool().setCurrentState(toolState);
-            toolRepository.save(loan.getTool());
+            toolService.changeToolState(tool, "En reparación");
+            clientService.changeClientState(client, "Restringido");
+
+            // Ingresa un nuevo movimiento en el kardex
+            KardexTypeEntity kardexType = kardexTypeRepository.findByName("Reparación");
+            KardexEntity newKardex = new KardexEntity();
+            newKardex.setTool(tool);
+            newKardex.setClient(client);
+            newKardex.setLoan(loan);
+            newKardex.setType(kardexType);
+            newKardex.setQuantity(1);
+            newKardex.setMovementDate(LocalDateTime.now());
+            kardexRepository.save(newKardex);
+        } else {
+            toolService.changeToolState(tool, "Disponible");
+            tool.setStock(tool.getStock() + 1);
         }
 
+        // Registra movimiento en el kardex
+        KardexTypeEntity kardexType = kardexTypeRepository.findByName("Devolución");
+        KardexEntity newKardex = new KardexEntity();
+        newKardex.setTool(tool);
+        newKardex.setClient(client);
+        newKardex.setLoan(loan);
+        newKardex.setType(kardexType);
+        newKardex.setQuantity(1);
+        newKardex.setMovementDate(LocalDateTime.now());
 
+        LoanEntity savedLoan = loanRepository.save(loan);
+        kardexRepository.save(newKardex);
 
-
+        return savedLoan;
 
     }
 }

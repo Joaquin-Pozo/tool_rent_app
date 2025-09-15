@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ToolRepository extends JpaRepository<ToolEntity,Long> {
-
+    public ToolEntity findByName(String name);
 }
