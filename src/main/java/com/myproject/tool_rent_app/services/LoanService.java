@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -27,12 +28,6 @@ public class LoanService {
     private ToolService toolService;
 
     @Autowired
-    private ClientStateRepository clientStateRepository;
-
-    @Autowired
-    private ClientRepository clientRepository;
-
-    @Autowired
     private ClientService clientService;
 
     @Autowired
@@ -43,6 +38,16 @@ public class LoanService {
 
     @Autowired
     private ToolStateRepository toolStateRepository;
+
+    // Lista todos los préstamos
+    public ArrayList<LoanEntity> getLoans() {
+        return (ArrayList<LoanEntity>) loanRepository.findAll();
+    }
+
+
+    public LoanEntity getLoanById(Long id){
+        return loanRepository.findById(id).get();
+    }
 
     // RF2.1 Registrar un préstamo asociando cliente y herramienta, con fecha de entrega y
     // fecha pactada de devolución. Se actualiza el kardex.
@@ -74,9 +79,7 @@ public class LoanService {
             if (overdueFine(prevLoan.getId()).compareTo(BigDecimal.ZERO) > 0) {
                 if (loan.getClient().getCurrentState().getName().equals(activeState)) {
                     // Si el cliente tiene deuda, actualiza su estado a restringido
-                    ClientStateEntity restrictedClient = clientStateRepository.findByName(restrictedState);
-                    loan.getClient().setCurrentState(restrictedClient);
-                    clientRepository.save(loan.getClient());
+                    clientService.changeClientState(loan.getClient().getId(), restrictedState);
                 }
                 throw new RuntimeException("El cliente tiene multas impagas por préstamos atrasados");
             }
@@ -84,9 +87,7 @@ public class LoanService {
             if (prevLoan.isDamaged()) {
                 if (loan.getClient().getCurrentState().getName().equals(activeState)) {
                     // Si el cliente tiene multa, actualiza su estado a restringido
-                    ClientStateEntity restrictedClient = clientStateRepository.findByName(restrictedState);
-                    loan.getClient().setCurrentState(restrictedClient);
-                    clientRepository.save(loan.getClient());
+                    clientService.changeClientState(loan.getClient().getId(), restrictedState);
                 }
                 throw new RuntimeException("El cliente tiene una multa por reposición de herramienta dañada");
             }
@@ -182,13 +183,13 @@ public class LoanService {
         // Aplica multa si existe un atraso en la devolución del préstamo
         if (fine.compareTo(BigDecimal.ZERO) > 0) {
             loan.setTotalFine(loan.getTotalFine().add(fine));
-            clientService.changeClientState(client, "Restringido");
+            clientService.changeClientState(client.getId(), "Restringido");
         }
         // Aplica multa si existe un daño en la herramienta, actualiza su estado y el kardex
         if (loan.isDamaged()) {
             loan.setTotalFine(loan.getTotalFine().add(loan.getTool().getReplacementCost()));
-            toolService.changeToolState(tool, "En reparación");
-            clientService.changeClientState(client, "Restringido");
+            toolService.changeToolState(tool.getId(), "En reparación");
+            clientService.changeClientState(client.getId(), "Restringido");
 
             // Ingresa un nuevo movimiento en el kardex
             KardexTypeEntity kardexType = kardexTypeRepository.findByName("Reparación");
@@ -201,7 +202,7 @@ public class LoanService {
             newKardex.setMovementDate(LocalDateTime.now());
             kardexRepository.save(newKardex);
         } else {
-            toolService.changeToolState(tool, "Disponible");
+            toolService.changeToolState(tool.getId(), "Disponible");
             tool.setStock(tool.getStock() + 1);
         }
 

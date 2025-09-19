@@ -7,6 +7,8 @@ import com.myproject.tool_rent_app.repositories.ClientStateRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+
 @Service
 public class ClientService {
 
@@ -17,9 +19,34 @@ public class ClientService {
     private ClientStateRepository clientStateRepository;
 
     // Actualiza el estado del cliente
-    public void changeClientState(ClientEntity client, String newState) {
-        ClientStateEntity newClientState = clientStateRepository.findByName(newState);
-        client.setCurrentState(newClientState);
-        clientRepository.save(client);
+    public ClientEntity changeClientState(Long id, String newState) {
+        ClientEntity client = clientRepository.findById(id).orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+        ClientStateEntity clientState = clientStateRepository.findByName(newState);
+        client.setCurrentState(clientState);
+        return clientRepository.save(client);
+    }
+
+    public ArrayList<ClientEntity> getClients(){
+        return (ArrayList<ClientEntity>) clientRepository.findAll();
+    }
+
+    public ClientEntity getClientById(Long id) {
+        return clientRepository.findById(id).get();
+    }
+
+    public ClientEntity saveClient(ClientEntity client){
+        return clientRepository.save(client);
+    }
+
+    public ClientEntity updateClient(ClientEntity client){
+        return  clientRepository.save(client);
+    }
+
+    public boolean deleteClient(Long id) {
+        if (!clientRepository.existsById(id)) {
+            return false;
+        }
+        clientRepository.deleteById(id);
+        return true;
     }
 }

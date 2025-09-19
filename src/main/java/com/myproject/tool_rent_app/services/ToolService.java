@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 
 @Service
 public class ToolService {
@@ -27,6 +28,18 @@ public class ToolService {
 
     @Autowired
     KardexTypeRepository kardexTypeRepository;
+
+    public ArrayList<ToolEntity> getTools() {
+        return (ArrayList<ToolEntity>) toolRepository.findAll();
+    }
+
+    public ToolEntity getToolById(Long id) {
+        return toolRepository.findById(id).get();
+    }
+
+    public ToolEntity updateTool(ToolEntity tool) {
+        return toolRepository.save(tool);
+    }
 
     // RF 1.1: Registrar nuevas herramientas con datos básicos (nombre, categoría, estado
     // inicial, valor de reposición) -> Actualizar el kardex
@@ -47,12 +60,14 @@ public class ToolService {
     }
 
     // RF 1.2: Dar de baja herramientas dañadas o en desuso. -> Actualizar el kardex
-    public void deleteTool(ToolEntity tool){
+    public boolean deleteTool(Long id){
         String toolState = "Dada de baja";
+
+        ToolEntity tool = toolRepository.findById(id).orElseThrow(() -> new RuntimeException("Herramienta no encontrada"));
 
         // Validación de que la herramienta por eliminar tenga el estado 'Dada de baja'
         if (!tool.getCurrentState().getName().equals(toolState)) {
-            throw new RuntimeException("La herramienta no está '" + toolState + "', no se puede eliminar");
+            return false;
         }
 
         KardexTypeEntity kardexType = kardexTypeRepository.findByName("Baja");
@@ -67,12 +82,14 @@ public class ToolService {
 
         // Elimina la herramienta (Dada de baja)
         toolRepository.delete(tool);
+        return true;
     }
     // Modifica el estado actual de una herramienta
-    public void changeToolState(ToolEntity tool, String newState) {
+    public ToolEntity changeToolState(Long id, String newState) {
+        ToolEntity tool = toolRepository.findById(id).orElseThrow(() -> new RuntimeException("Herramienta no encontrada"));
         ToolStateEntity toolState = toolStateRepository.findByName(newState);
         tool.setCurrentState(toolState);
-        toolRepository.save(tool);
+        return toolRepository.save(tool);
     }
 
     // Obtiene una herramienta especifica

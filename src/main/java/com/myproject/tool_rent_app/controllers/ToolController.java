@@ -4,41 +4,64 @@ import com.myproject.tool_rent_app.entities.ToolEntity;
 import com.myproject.tool_rent_app.repositories.ToolRepository;
 import com.myproject.tool_rent_app.services.ToolService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
-@RequestMapping("/tools")
+@RequestMapping("/api/v1/tools")
+@CrossOrigin("*")
 public class ToolController {
 
     @Autowired
     private ToolService toolService;
 
-    @Autowired
-    private ToolRepository toolRepository;
+    // Muestra todas las herramientas
+    @GetMapping("/")
+    public ResponseEntity<List<ToolEntity>> listTools() {
+        return ResponseEntity.ok(toolService.getTools());
+    }
+
+    // Obtiene una herramienta por id
+    @GetMapping("/{id}")
+    public ResponseEntity<ToolEntity> getToolById(@PathVariable Long id) {
+        ToolEntity tool = toolService.getToolById(id);
+        return ResponseEntity.ok(tool);
+    }
 
     // Crea una nueva herramienta
-    @PostMapping
-    public ToolEntity createTool(@RequestBody ToolEntity tool) {
-        return toolService.createTool(tool);
+    @PostMapping("/")
+    public ResponseEntity<ToolEntity> createTool(@RequestBody ToolEntity tool) {
+        ToolEntity newTool = toolService.createTool(tool);
+        return ResponseEntity.ok(newTool);
+    }
+
+    // Actualiza una herramienta (stock, nombre, etc.)
+    @PutMapping("/")
+    public ResponseEntity<ToolEntity> updateTool(@RequestBody ToolEntity tool) {
+        ToolEntity updated = toolService.updateTool(tool);
+        return ResponseEntity.ok(updated);
     }
 
     // Da de baja una herramienta
     @DeleteMapping("/{id}")
-    public void deleteTool(@PathVariable Long id) {
-        ToolEntity tool = toolRepository.findById(id).orElseThrow(() -> new RuntimeException("Herramienta no encontrada"));
-        toolService.deleteTool(tool);
+    public ResponseEntity<Boolean> deleteToolById(@PathVariable Long id) {
+        var isDeleted = toolService.deleteTool(id);
+        return ResponseEntity.ok(isDeleted);
     }
 
     // Cambia el estado de una herramienta
     @PutMapping("/{id}/state")
-    public void changeToolState(@PathVariable Long id, @RequestParam String newState) {
-        ToolEntity tool = toolRepository.findById(id).orElseThrow(() -> new RuntimeException("Herramienta no encontrada"));
-        toolService.changeToolState(tool, newState);
+    public ResponseEntity<ToolEntity> updateToolState(@PathVariable Long id, @RequestParam String newState) {
+        ToolEntity updatedTool = toolService.changeToolState(id, newState);
+        return ResponseEntity.ok(updatedTool);
     }
 
     // Busca una herramienta por su nombre
     @GetMapping("/by-name")
-    public ToolEntity getToolByName(@RequestParam String name) {
-        return toolService.getToolByName(name);
+    public ResponseEntity<ToolEntity> getToolByName(@RequestParam String name) {
+        ToolEntity tool = toolService.getToolByName(name);
+        return ResponseEntity.ok(tool);
     }
 }
