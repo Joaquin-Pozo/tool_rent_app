@@ -58,7 +58,7 @@ public class ToolService {
 
         return savedTool;
     }
-
+    /*
     // RF 1.2: Dar de baja herramientas dañadas o en desuso. -> Actualizar el kardex
     public boolean deleteTool(Long id){
         String toolState = "Dada de baja";
@@ -84,15 +84,32 @@ public class ToolService {
         toolRepository.delete(tool);
         return true;
     }
+     */
     // Modifica el estado actual de una herramienta
     public ToolEntity changeToolState(Long id, String newState) {
         ToolEntity tool = toolRepository.findById(id).orElseThrow(() -> new RuntimeException("Herramienta no encontrada"));
         ToolStateEntity toolState = toolStateRepository.findByName(newState);
+
+        // Valida si el nuevo estado de la herramienta es 'Dada de baja'
+        if (newState.equals("Dada de baja")) {
+            KardexTypeEntity kardexType = kardexTypeRepository.findByName("Baja");
+
+            // Ingresa un nuevo movimiento en el kardex
+            KardexEntity newKardex = new KardexEntity();
+            newKardex.setTool(tool);
+            newKardex.setType(kardexType);
+            newKardex.setMovementDate(LocalDateTime.now());
+            newKardex.setQuantity(tool.getStock());
+            kardexRepository.save(newKardex);
+
+            tool.setStock(0);
+        }
+
         tool.setCurrentState(toolState);
         return toolRepository.save(tool);
     }
 
-    // Obtiene una herramienta especifica
+    // Obtiene una herramienta por su nombre
     public ToolEntity getToolByName(String name){
         return toolRepository.findByName(name);
     }

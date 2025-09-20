@@ -45,11 +45,13 @@ public class ToolController {
     }
 
     // Da de baja una herramienta
+    /*
     @DeleteMapping("/{id}")
     public ResponseEntity<Boolean> deleteToolById(@PathVariable Long id) {
         var isDeleted = toolService.deleteTool(id);
         return ResponseEntity.ok(isDeleted);
     }
+     */
 
     // Cambia el estado de una herramienta
     @PutMapping("/{id}/state")

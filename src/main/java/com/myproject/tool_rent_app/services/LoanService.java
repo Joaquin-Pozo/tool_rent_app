@@ -58,16 +58,19 @@ public class LoanService {
         // Validación del estado 'Activo' del cliente
         String clientState = loan.getClient().getCurrentState().getName();
         if (!clientState.equals(activeState)) {
-            throw new RuntimeException("El cliente no se encuentra '" +  activeState + "', no puede registrar un préstamo");
+            throw new RuntimeException("El cliente no se encuentra '" + activeState + "', no puede registrar un préstamo");
         }
 
         List<LoanEntity> previousLoans = loanRepository.findByClientId(loan.getClient().getId());
 
         // Verifica que el cliente no tenga más de 5 préstamos activos
         int count = 0;
-        for (LoanEntity prevLoan: previousLoans) {
-            if (prevLoan.getCurrentState().getName().equals("En progreso")) {
-                count++;
+        for (LoanEntity prevLoan : previousLoans) {
+            // Verifica que haya sido el mismo cliente quien solicitó el prestamo
+            if (prevLoan.getClient().equals(loan.getClient())) {
+                if (prevLoan.getCurrentState().getName().equals("En progreso")) {
+                    count++;
+                }
             }
         }
         if (count >= 5) {
@@ -76,20 +79,23 @@ public class LoanService {
 
         // Verifica si el cliente esta al dia (no tiene prestamos atrasados o multas pendientes)
         for (LoanEntity prevLoan : previousLoans) {
-            if (overdueFine(prevLoan.getId()).compareTo(BigDecimal.ZERO) > 0) {
-                if (loan.getClient().getCurrentState().getName().equals(activeState)) {
-                    // Si el cliente tiene deuda, actualiza su estado a restringido
-                    clientService.changeClientState(loan.getClient().getId(), restrictedState);
+            // Verifica que haya sido el mismo cliente quien solicitó el prestamo
+            if (prevLoan.getClient().equals(loan.getClient())) {
+                if (overdueFine(prevLoan.getId()).compareTo(BigDecimal.ZERO) > 0) {
+                    if (loan.getClient().getCurrentState().getName().equals(activeState)) {
+                        // Si el cliente tiene deuda, actualiza su estado a restringido
+                        clientService.changeClientState(loan.getClient().getId(), restrictedState);
+                    }
+                    throw new RuntimeException("El cliente tiene multas impagas por préstamos atrasados");
                 }
-                throw new RuntimeException("El cliente tiene multas impagas por préstamos atrasados");
-            }
 
-            if (prevLoan.isDamaged()) {
-                if (loan.getClient().getCurrentState().getName().equals(activeState)) {
-                    // Si el cliente tiene multa, actualiza su estado a restringido
-                    clientService.changeClientState(loan.getClient().getId(), restrictedState);
+                if (prevLoan.isDamaged()) {
+                    if (loan.getClient().getCurrentState().getName().equals(activeState)) {
+                        // Si el cliente tiene multa por daños, actualiza su estado a restringido
+                        clientService.changeClientState(loan.getClient().getId(), restrictedState);
+                    }
+                    throw new RuntimeException("El cliente tiene una multa por reposición de herramienta dañada");
                 }
-                throw new RuntimeException("El cliente tiene una multa por reposición de herramienta dañada");
             }
         }
 
@@ -118,8 +124,7 @@ public class LoanService {
         }
 
         // Actualiza stock y estado de la herramienta
-        ToolStateEntity loaned = toolStateRepository.findByName("Prestada");
-        loan.getTool().setCurrentState(loaned);
+        toolService.changeToolState(loan.getTool().getId(), "Prestada");
         loan.getTool().setStock(loan.getTool().getStock() - 1);
         toolRepository.save(loan.getTool());
 
@@ -216,6 +221,7 @@ public class LoanService {
         newKardex.setQuantity(1);
         newKardex.setMovementDate(LocalDateTime.now());
 
+        toolRepository.save(tool);
         LoanEntity savedLoan = loanRepository.save(loan);
         kardexRepository.save(newKardex);
 

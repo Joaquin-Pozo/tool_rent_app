@@ -1,7 +1,6 @@
 package com.myproject.tool_rent_app.controllers;
 
 import com.myproject.tool_rent_app.entities.ClientEntity;
-import com.myproject.tool_rent_app.repositories.ClientRepository;
 import com.myproject.tool_rent_app.services.ClientService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

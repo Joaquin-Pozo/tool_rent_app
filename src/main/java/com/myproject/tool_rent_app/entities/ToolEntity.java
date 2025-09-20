@@ -32,7 +32,7 @@ public class ToolEntity {
     @Column(nullable = false)
     private BigDecimal replacementCost;
 
-    // Available, Loaned, Under repair, Unserviceable
+    // Disponible, Prestada, En reparación, Dada de baja
     @ManyToOne
     @JoinColumn(name = "state_id", nullable = false)
     private ToolStateEntity currentState;
@@ -42,7 +42,8 @@ public class ToolEntity {
     private int stock;
 
     // Tool -> Loan
-    @OneToMany(mappedBy = "tool")
-    private java.util.List<LoanEntity> loans;
+    // hasta el momento no se ha ocupado este mapeo
+    //@OneToMany(mappedBy = "tool")
+    //private java.util.List<LoanEntity> loans;
 
 }

@@ -29,6 +29,6 @@ public class ClientEntity {
 
     // Client -> Loan
     // Hasta el momento no se ha ocupado este mapeo
-    @OneToMany(mappedBy = "client")
-    private java.util.List<LoanEntity> loans;
+    //@OneToMany(mappedBy = "client")
+    //private java.util.List<LoanEntity> loans;
 }
