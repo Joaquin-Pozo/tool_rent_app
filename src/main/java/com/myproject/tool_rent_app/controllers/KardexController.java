@@ -8,6 +8,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -29,12 +30,29 @@ public class KardexController {
         List<KardexEntity> kardexMovements = kardexService.getMovementsByTool(toolId);
         return ResponseEntity.ok(kardexMovements);
     }
-
+    // recibe las fechas de inicio y fin como yyyy-mm-dd
     @GetMapping("/date-range")
     public ResponseEntity<List<KardexEntity>> getMovementsByDateRange(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
         List<KardexEntity> kardexMovements = kardexService.getMovementsByDateRange(start, end);
         return ResponseEntity.ok(kardexMovements);
     }
+
+    @GetMapping("/filter")
+    public ResponseEntity<List<KardexEntity>> filter(
+            @RequestParam(required = false) Long toolId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
+        if (toolId != null && start != null && end != null) {
+            return ResponseEntity.ok(kardexService.getMovementsByToolAndDateRange(toolId, start, end));
+        } else if (toolId != null) {
+            return ResponseEntity.ok(kardexService.getMovementsByTool(toolId));
+        } else if (start != null &&  end != null) {
+            return ResponseEntity.ok(kardexService.getMovementsByDateRange(start, end));
+        } else {
+            return ResponseEntity.ok(kardexService.getKardexs());
+        }
+    }
+
 }

@@ -9,7 +9,12 @@ import java.util.List;
 
 @Repository
 public interface KardexRepository extends JpaRepository<KardexEntity,Long> {
+    // busca por id de herramienta
     List<KardexEntity> findByToolId(Long toolId);
 
+    // busca por rango de fecha
     List<KardexEntity> findByMovementDateBetween(LocalDateTime start, LocalDateTime end);
+
+    // busca por herramienta + rango de fecha
+    List<KardexEntity> findByToolIdAndMovementDateBetween(Long toolId, LocalDateTime start, LocalDateTime end);
 }
