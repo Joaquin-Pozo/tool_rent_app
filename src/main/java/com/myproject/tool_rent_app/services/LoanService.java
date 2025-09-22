@@ -7,6 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -38,6 +39,8 @@ public class LoanService {
 
     @Autowired
     private ToolStateRepository toolStateRepository;
+    @Autowired
+    private ClientRepository clientRepository;
 
     // Lista todos los préstamos
     public ArrayList<LoanEntity> getLoans() {
@@ -55,20 +58,31 @@ public class LoanService {
         String activeState = "Activo";
         String restrictedState = "Restringido";
 
+        // Carga el cliente completo al préstamo
+        ClientEntity client = clientRepository.findById(loan.getClient().getId())
+                .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+        loan.setClient(client);
+
+        // Carga la herramienta completa al préstamo
+        ToolEntity tool = toolRepository.findById(loan.getTool().getId())
+                .orElseThrow(() -> new RuntimeException("Herramienta no encontrada"));
+        loan.setTool(tool);
+
         // Validación del estado 'Activo' del cliente
-        String clientState = loan.getClient().getCurrentState().getName();
+        String clientState = client.getCurrentState().getName();
         if (!clientState.equals(activeState)) {
             throw new RuntimeException("El cliente no se encuentra '" + activeState + "', no puede registrar un préstamo");
         }
 
-        List<LoanEntity> previousLoans = loanRepository.findByClientId(loan.getClient().getId());
+        List<LoanEntity> previousLoans = loanRepository.findByClientId(client.getId());
 
         // Verifica que el cliente no tenga más de 5 préstamos activos
         int count = 0;
         for (LoanEntity prevLoan : previousLoans) {
             // Verifica que haya sido el mismo cliente quien solicitó el prestamo
-            if (prevLoan.getClient().equals(loan.getClient())) {
-                if (prevLoan.getCurrentState().getName().equals("En progreso")) {
+            if (prevLoan.getClient().equals(client)) {
+                if (prevLoan.getCurrentState().getName().equals("En progreso")
+                || prevLoan.getCurrentState().getName().equals("Atrasado")) {
                     count++;
                 }
             }
@@ -80,19 +94,19 @@ public class LoanService {
         // Verifica si el cliente esta al dia (no tiene prestamos atrasados o multas pendientes)
         for (LoanEntity prevLoan : previousLoans) {
             // Verifica que haya sido el mismo cliente quien solicitó el prestamo
-            if (prevLoan.getClient().equals(loan.getClient())) {
+            if (prevLoan.getClient().equals(client)) {
                 if (overdueFine(prevLoan.getId()).compareTo(BigDecimal.ZERO) > 0) {
-                    if (loan.getClient().getCurrentState().getName().equals(activeState)) {
-                        // Si el cliente tiene deuda, actualiza su estado a restringido
-                        clientService.changeClientState(loan.getClient().getId(), restrictedState);
+                    if (client.getCurrentState().getName().equals(activeState)) {
+                        // Si el cliente tiene deuda y esta en estado 'Activo', actualiza su estado a restringido
+                        clientService.changeClientState(client.getId(), restrictedState);
                     }
                     throw new RuntimeException("El cliente tiene multas impagas por préstamos atrasados");
                 }
 
                 if (prevLoan.isDamaged()) {
-                    if (loan.getClient().getCurrentState().getName().equals(activeState)) {
-                        // Si el cliente tiene multa por daños, actualiza su estado a restringido
-                        clientService.changeClientState(loan.getClient().getId(), restrictedState);
+                    if (client.getCurrentState().getName().equals(activeState)) {
+                        // Si el cliente tiene multa por daños y esta en estado 'Activo', actualiza su estado a restringido
+                        clientService.changeClientState(client.getId(), restrictedState);
                     }
                     throw new RuntimeException("El cliente tiene una multa por reposición de herramienta dañada");
                 }
@@ -100,33 +114,36 @@ public class LoanService {
         }
 
         // Verifica que no existan préstamos en curso para la misma herramienta
-        List<LoanEntity> activeLoansForTool = loanRepository.findByToolIdAndCurrentStateName(loan.getTool().getId(), "En progreso");
+        List<LoanEntity> activeLoansForTool = loanRepository.findByToolIdAndCurrentStateName(tool.getId(), "En progreso");
         if (!activeLoansForTool.isEmpty()) {
             throw new RuntimeException("La herramienta solicitada ya se encuentra prestada y no ha sido devuelta");
         }
 
         // Validación de disponibilidad de stock de la herramienta
-        if (loan.getTool().getStock() <= 0) {
+        if (tool.getStock() <= 0) {
             throw new RuntimeException("No quedan herramientas disponibles");
         }
 
         // Validación del estado de la herramienta
-        if (loan.getTool().getCurrentState().getName().equals("En reparación")) {
+        if (tool.getCurrentState().getName().equals("En reparación")) {
             throw new RuntimeException("La herramienta solicitada se encuentra en reparación");
         }
-        if (loan.getTool().getCurrentState().getName().equals("Dada de baja")) {
+        if (tool.getCurrentState().getName().equals("Dada de baja")) {
             throw new RuntimeException("La herramienta solicitada se encuentra dada de baja");
         }
 
         // Validación de fechas (entrega <= devolucion)
+        if (loan.getDeliveryDate() == null || loan.getReturnDate() == null) {
+            throw new RuntimeException("Debe ingresar fecha de entrega y fecha de devolución");
+        }
         if (loan.getReturnDate().isBefore(loan.getDeliveryDate())) {
             throw new RuntimeException("La fecha de devolución no puede ser anterior a la fecha de entrega");
         }
 
         // Actualiza stock y estado de la herramienta
-        toolService.changeToolState(loan.getTool().getId(), "Prestada");
-        loan.getTool().setStock(loan.getTool().getStock() - 1);
-        toolRepository.save(loan.getTool());
+        toolService.changeToolState(tool.getId(), "Prestada");
+        tool.setStock(tool.getStock() - 1);
+        toolRepository.save(tool);
 
         // Actualiza estado del préstamo
         LoanStateEntity inProgress = loanStateRepository.findByName("En progreso");
@@ -136,8 +153,8 @@ public class LoanService {
         KardexTypeEntity kardexType = kardexTypeRepository.findByName("Préstamo");
         KardexEntity newKardex = new KardexEntity();
         newKardex.setLoan(loan);
-        newKardex.setTool(loan.getTool());
-        newKardex.setClient(loan.getClient());
+        newKardex.setTool(tool);
+        newKardex.setClient(client);
         newKardex.setType(kardexType);
         newKardex.setQuantity(1);
         newKardex.setMovementDate(LocalDateTime.now());
@@ -154,12 +171,12 @@ public class LoanService {
         // Validación de la existencia en la bd del prestamo
         LoanEntity loanEntity = loanRepository.findById(loanId).orElseThrow(() -> new RuntimeException("Prestamo no encontrado"));
 
-        LocalDateTime today = LocalDateTime.now();
-        LocalDateTime returnDate = loanEntity.getReturnDate();
+        LocalDate today = LocalDate.now();
+        LocalDate returnDate = loanEntity.getReturnDate();
 
         // Calcula los dias de atraso y aplica la tarifa por dia
         if (today.isAfter(returnDate)) {
-            long daysLate = ChronoUnit.DAYS.between(returnDate.toLocalDate(), today.toLocalDate());
+            long daysLate = ChronoUnit.DAYS.between(returnDate, today);
             return loanEntity.getDailyFineRate().multiply(BigDecimal.valueOf(daysLate));
         }
         return BigDecimal.ZERO;
@@ -169,10 +186,12 @@ public class LoanService {
     @Scheduled(fixedDelay = 5000)
     public void updateOverdueLoans() {
         List<LoanEntity> loanEntities = loanRepository.findAll();
-        LocalDateTime today = LocalDateTime.now();
+        LocalDate today = LocalDate.now();
+
         for (LoanEntity loanEntity : loanEntities) {
-            LocalDateTime returnDate = loanEntity.getReturnDate();
+            LocalDate returnDate = loanEntity.getReturnDate();
             String currentLoanState =  loanEntity.getCurrentState().getName();
+
             if (today.isAfter(returnDate) && currentLoanState.equals("En progreso")) {
                 LoanStateEntity newLoanState = loanStateRepository.findByName("Atrasado");
                 loanEntity.setCurrentState(newLoanState);
@@ -182,17 +201,29 @@ public class LoanService {
     }
 
     public LoanEntity returnLoan(LoanEntity loan) {
+        // Setea el valor de la multa en 0 si el valor viene null
+        if (loan.getTotalFine() == null) {
+            loan.setTotalFine(BigDecimal.ZERO);
+        }
+        // Calcula multa en caso de existir
         BigDecimal fine = overdueFine(loan.getId());
-        ToolEntity tool = loan.getTool();
-        ClientEntity client = loan.getClient();
+
+        // Carga la herramienta completa al préstamo
+        ToolEntity tool = toolRepository.findById(loan.getTool().getId())
+                .orElseThrow(() -> new RuntimeException("Herramienta no encontrada"));
+        // Carga el cliente completo al préstamo
+        ClientEntity client = clientRepository.findById(loan.getClient().getId())
+                .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+
         // Aplica multa si existe un atraso en la devolución del préstamo
         if (fine.compareTo(BigDecimal.ZERO) > 0) {
             loan.setTotalFine(loan.getTotalFine().add(fine));
             clientService.changeClientState(client.getId(), "Restringido");
         }
+
         // Aplica multa si existe un daño en la herramienta, actualiza su estado y el kardex
         if (loan.isDamaged()) {
-            loan.setTotalFine(loan.getTotalFine().add(loan.getTool().getReplacementCost()));
+            loan.setTotalFine(loan.getTotalFine().add(tool.getReplacementCost()));
             toolService.changeToolState(tool.getId(), "En reparación");
             clientService.changeClientState(client.getId(), "Restringido");
 
@@ -222,6 +253,11 @@ public class LoanService {
         newKardex.setMovementDate(LocalDateTime.now());
 
         toolRepository.save(tool);
+
+        // Actualiza el estado del préstamo
+        LoanStateEntity completedState = loanStateRepository.findByName("Completado");
+        loan.setCurrentState(completedState);
+
         LoanEntity savedLoan = loanRepository.save(loan);
         kardexRepository.save(newKardex);
 

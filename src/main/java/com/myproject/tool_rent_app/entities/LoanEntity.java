@@ -1,5 +1,6 @@
 package com.myproject.tool_rent_app.entities;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,6 +8,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -35,15 +37,17 @@ public class LoanEntity {
     @JoinColumn(name = "state_id", nullable = false)
     private LoanStateEntity currentState;
 
-    private LocalDateTime deliveryDate;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate deliveryDate;
 
+    @JsonFormat(pattern = "yyyy-MM-dd")
     @Column(nullable = false)
-    private LocalDateTime returnDate;
+    private LocalDate returnDate;
 
     @ColumnDefault("5000")
     private BigDecimal dailyFineRate;
 
-    private BigDecimal totalFine;
+    private BigDecimal totalFine = BigDecimal.ZERO;
 
     @Column(name = "damaged", nullable = false)
     @ColumnDefault("false")

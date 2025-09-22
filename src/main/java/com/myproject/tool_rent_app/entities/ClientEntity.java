@@ -23,7 +23,7 @@ public class ClientEntity {
     private String documentNumber;
 
     // Activo, Restringido
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "state_id", nullable = false)
     private ClientStateEntity currentState;
 
