@@ -11,7 +11,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class LoanService {
@@ -68,6 +70,25 @@ public class LoanService {
         }
         clientRepository.save(client);
         return loanRepository.save(loan);
+    }
+
+    // Obtiene en cada fila las herramientas prestadas con su id, nombre, cantidad de prestamos
+    public List<Map<String, Object>> getMostLoanedTools(LocalDate fromDate, LocalDate toDate) {
+        List <Object[]> raw = loanRepository.findMostLoanedTools(fromDate, toDate);
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (Object[] row: raw) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("toolId", row[0]);
+            map.put("toolName", row[1]);
+            map.put("totalLoans", row[2]);
+            list.add(map);
+        }
+        return list;
+    }
+
+    // Obtiene a los clientes con atrasos
+    public List<ClientEntity> getClientsWithDelays() {
+        return loanRepository.findClientswithDelays();
     }
 
     // RF2.1 Registrar un préstamo asociando cliente y herramienta, con fecha de entrega y
@@ -200,22 +221,23 @@ public class LoanService {
         return BigDecimal.ZERO;
     }
 
-    // Actualiza automáticamente el estado de los préstamos atrasados
-    @Scheduled(fixedDelay = 5000)
-    public void updateOverdueLoans() {
+    // Actualiza el estado de los préstamos atrasados
+    public List<LoanEntity> updateOverdueLoans() {
         List<LoanEntity> loanEntities = loanRepository.findAll();
         LocalDate today = LocalDate.now();
+        List<LoanEntity> updatedLoans = new ArrayList<>();
 
         for (LoanEntity loanEntity : loanEntities) {
             LocalDate returnDate = loanEntity.getReturnDate();
-            String currentLoanState =  loanEntity.getCurrentState().getName();
+            String currentLoanState = loanEntity.getCurrentState().getName();
 
             if (today.isAfter(returnDate) && currentLoanState.equals("En progreso")) {
                 LoanStateEntity newLoanState = loanStateRepository.findByName("Atrasado");
                 loanEntity.setCurrentState(newLoanState);
-                loanRepository.save(loanEntity);
+                updatedLoans.add(loanRepository.save(loanEntity));
             }
         }
+        return updatedLoans;
     }
 
     public LoanEntity returnLoan(LoanEntity loan) {

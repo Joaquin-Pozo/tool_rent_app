@@ -1,6 +1,7 @@
 package com.myproject.tool_rent_app.controllers;
 
 
+import com.myproject.tool_rent_app.entities.ClientEntity;
 import com.myproject.tool_rent_app.entities.LoanEntity;
 import com.myproject.tool_rent_app.services.LoanService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,7 +9,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/loans")
@@ -58,4 +61,26 @@ public class LoanController {
         LoanEntity newLoan = loanService.payFine(loan);
         return ResponseEntity.ok(newLoan);
     }
+
+    // muestra las herramientas mas solicitadas
+    @GetMapping("/most-loaned-tools")
+    public ResponseEntity<List<Map<String, Object>>> getMostLoanedTools(
+            @RequestParam(required=false) LocalDate fromDate,
+            @RequestParam(required = false) LocalDate toDate) {
+        return ResponseEntity.ok(loanService.getMostLoanedTools(fromDate, toDate));
+    }
+
+    // obtiene a los clientes con atrasos
+    @GetMapping("/clients-with-delays")
+    public ResponseEntity<List<ClientEntity>> getClientsWithDelays() {
+        return ResponseEntity.ok(loanService.getClientsWithDelays());
+    }
+
+    // actualiza el estado de los prestamos atrasados
+    @PostMapping("/update-overdue")
+    public ResponseEntity<List<LoanEntity>> updateOverdueLoans() {
+        List<LoanEntity> updatedLoans = loanService.updateOverdueLoans();
+        return ResponseEntity.ok(updatedLoans);
+    }
+
 }
