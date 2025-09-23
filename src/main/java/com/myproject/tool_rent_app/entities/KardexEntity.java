@@ -1,11 +1,12 @@
 package com.myproject.tool_rent_app.entities;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "kardex")
@@ -37,7 +38,8 @@ public class KardexEntity {
     @Column(nullable = false)
     private int quantity;
 
+    @JsonFormat(pattern = "yyyy-MM-dd")
     @Column(nullable = false)
-    private LocalDateTime movementDate;
+    private LocalDate movementDate;
 
 }

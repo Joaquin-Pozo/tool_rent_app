@@ -11,7 +11,7 @@ import com.myproject.tool_rent_app.repositories.ToolStateRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
 
 @Service
@@ -52,39 +52,12 @@ public class ToolService {
         KardexEntity newKardex = new KardexEntity();
         newKardex.setTool(savedTool);
         newKardex.setType(kardexType);
-        newKardex.setMovementDate(LocalDateTime.now());
+        newKardex.setMovementDate(LocalDate.now());
         newKardex.setQuantity(savedTool.getStock());
         kardexRepository.save(newKardex);
 
         return savedTool;
     }
-    /*
-    // RF 1.2: Dar de baja herramientas dañadas o en desuso. -> Actualizar el kardex
-    public boolean deleteTool(Long id){
-        String toolState = "Dada de baja";
-
-        ToolEntity tool = toolRepository.findById(id).orElseThrow(() -> new RuntimeException("Herramienta no encontrada"));
-
-        // Validación de que la herramienta por eliminar tenga el estado 'Dada de baja'
-        if (!tool.getCurrentState().getName().equals(toolState)) {
-            return false;
-        }
-
-        KardexTypeEntity kardexType = kardexTypeRepository.findByName("Baja");
-
-        // Ingresa un nuevo movimiento en el kardex
-        KardexEntity newKardex = new KardexEntity();
-        newKardex.setTool(tool);
-        newKardex.setType(kardexType);
-        newKardex.setMovementDate(LocalDateTime.now());
-        newKardex.setQuantity(tool.getStock());
-        kardexRepository.save(newKardex);
-
-        // Elimina la herramienta (Dada de baja)
-        toolRepository.delete(tool);
-        return true;
-    }
-     */
     // Modifica el estado actual de una herramienta
     public ToolEntity changeToolState(Long id, String newState) {
         ToolEntity tool = toolRepository.findById(id).orElseThrow(() -> new RuntimeException("Herramienta no encontrada"));
@@ -98,7 +71,7 @@ public class ToolService {
             KardexEntity newKardex = new KardexEntity();
             newKardex.setTool(tool);
             newKardex.setType(kardexType);
-            newKardex.setMovementDate(LocalDateTime.now());
+            newKardex.setMovementDate(LocalDate.now());
             newKardex.setQuantity(tool.getStock());
             kardexRepository.save(newKardex);
 

@@ -4,12 +4,10 @@ package com.myproject.tool_rent_app.controllers;
 import com.myproject.tool_rent_app.entities.KardexEntity;
 import com.myproject.tool_rent_app.services.KardexService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -32,9 +30,7 @@ public class KardexController {
     }
     // recibe las fechas de inicio y fin como yyyy-mm-dd
     @GetMapping("/date-range")
-    public ResponseEntity<List<KardexEntity>> getMovementsByDateRange(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
+    public ResponseEntity<List<KardexEntity>> getMovementsByDateRange(@RequestParam LocalDate start, @RequestParam LocalDate end) {
         List<KardexEntity> kardexMovements = kardexService.getMovementsByDateRange(start, end);
         return ResponseEntity.ok(kardexMovements);
     }
@@ -42,8 +38,8 @@ public class KardexController {
     @GetMapping("/filter")
     public ResponseEntity<List<KardexEntity>> filter(
             @RequestParam(required = false) Long toolId,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
+            @RequestParam(required = false) LocalDate start,
+            @RequestParam(required = false) LocalDate end) {
         if (toolId != null && start != null && end != null) {
             return ResponseEntity.ok(kardexService.getMovementsByToolAndDateRange(toolId, start, end));
         } else if (toolId != null) {

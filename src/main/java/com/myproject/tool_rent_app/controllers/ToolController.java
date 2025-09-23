@@ -1,7 +1,6 @@
 package com.myproject.tool_rent_app.controllers;
 
 import com.myproject.tool_rent_app.entities.ToolEntity;
-import com.myproject.tool_rent_app.repositories.ToolRepository;
 import com.myproject.tool_rent_app.services.ToolService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -43,15 +42,6 @@ public class ToolController {
         ToolEntity updated = toolService.updateTool(tool);
         return ResponseEntity.ok(updated);
     }
-
-    // Da de baja una herramienta
-    /*
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Boolean> deleteToolById(@PathVariable Long id) {
-        var isDeleted = toolService.deleteTool(id);
-        return ResponseEntity.ok(isDeleted);
-    }
-     */
 
     // Cambia el estado de una herramienta
     @PutMapping("/{id}/state")

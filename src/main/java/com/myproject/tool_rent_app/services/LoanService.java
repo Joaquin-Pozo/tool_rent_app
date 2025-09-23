@@ -38,8 +38,6 @@ public class LoanService {
     private LoanStateRepository loanStateRepository;
 
     @Autowired
-    private ToolStateRepository toolStateRepository;
-    @Autowired
     private ClientRepository clientRepository;
 
     // Lista todos los préstamos
@@ -50,6 +48,26 @@ public class LoanService {
 
     public LoanEntity getLoanById(Long id){
         return loanRepository.findById(id).get();
+    }
+
+    public LoanEntity payFine(LoanEntity loan) {
+        // Carga el cliente completo al préstamo
+        ClientEntity client = clientRepository.findById(loan.getClient().getId())
+                .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+
+        // Setea la multa del préstamo a 0
+        loan.setTotalFine(BigDecimal.ZERO);
+
+        // Cambia el estado del préstamo a Completado
+        LoanStateEntity completed = loanStateRepository.findByName("Completado");
+        loan.setCurrentState(completed);
+
+        // Si el cliente estaba en estado 'Restringido', cambia el estado a 'Activo'
+        if (client.getCurrentState().getName().equals("Restringido")) {
+            clientService.changeClientState(client.getId(), "Activo");
+        }
+        clientRepository.save(client);
+        return loanRepository.save(loan);
     }
 
     // RF2.1 Registrar un préstamo asociando cliente y herramienta, con fecha de entrega y
@@ -95,15 +113,15 @@ public class LoanService {
         for (LoanEntity prevLoan : previousLoans) {
             // Verifica que haya sido el mismo cliente quien solicitó el prestamo
             if (prevLoan.getClient().equals(client)) {
-                if (overdueFine(prevLoan.getId()).compareTo(BigDecimal.ZERO) > 0) {
+                if (prevLoan.getCurrentState().getName().equals("Devuelto")) {
                     if (client.getCurrentState().getName().equals(activeState)) {
                         // Si el cliente tiene deuda y esta en estado 'Activo', actualiza su estado a restringido
                         clientService.changeClientState(client.getId(), restrictedState);
                     }
                     throw new RuntimeException("El cliente tiene multas impagas por préstamos atrasados");
                 }
-
-                if (prevLoan.isDamaged()) {
+                // Verifica si el cliente dañó la herramienta y no ha pagado la multa
+                if (prevLoan.isDamaged() && !prevLoan.getCurrentState().getName().equals("Completado")) {
                     if (client.getCurrentState().getName().equals(activeState)) {
                         // Si el cliente tiene multa por daños y esta en estado 'Activo', actualiza su estado a restringido
                         clientService.changeClientState(client.getId(), restrictedState);
@@ -157,7 +175,7 @@ public class LoanService {
         newKardex.setClient(client);
         newKardex.setType(kardexType);
         newKardex.setQuantity(1);
-        newKardex.setMovementDate(LocalDateTime.now());
+        newKardex.setMovementDate(LocalDate.now());
 
         LoanEntity savedLoan = loanRepository.save(loan);
 
@@ -215,10 +233,13 @@ public class LoanService {
         ClientEntity client = clientRepository.findById(loan.getClient().getId())
                 .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
 
+        boolean haveFine = false;
+
         // Aplica multa si existe un atraso en la devolución del préstamo
         if (fine.compareTo(BigDecimal.ZERO) > 0) {
             loan.setTotalFine(loan.getTotalFine().add(fine));
             clientService.changeClientState(client.getId(), "Restringido");
+            haveFine = true;
         }
 
         // Aplica multa si existe un daño en la herramienta, actualiza su estado y el kardex
@@ -226,6 +247,7 @@ public class LoanService {
             loan.setTotalFine(loan.getTotalFine().add(tool.getReplacementCost()));
             toolService.changeToolState(tool.getId(), "En reparación");
             clientService.changeClientState(client.getId(), "Restringido");
+            haveFine = true;
 
             // Ingresa un nuevo movimiento en el kardex
             KardexTypeEntity kardexType = kardexTypeRepository.findByName("Reparación");
@@ -235,7 +257,7 @@ public class LoanService {
             newKardex.setLoan(loan);
             newKardex.setType(kardexType);
             newKardex.setQuantity(1);
-            newKardex.setMovementDate(LocalDateTime.now());
+            newKardex.setMovementDate(LocalDate.now());
             kardexRepository.save(newKardex);
         } else {
             toolService.changeToolState(tool.getId(), "Disponible");
@@ -250,13 +272,18 @@ public class LoanService {
         newKardex.setLoan(loan);
         newKardex.setType(kardexType);
         newKardex.setQuantity(1);
-        newKardex.setMovementDate(LocalDateTime.now());
+        newKardex.setMovementDate(LocalDate.now());
 
         toolRepository.save(tool);
 
-        // Actualiza el estado del préstamo
-        LoanStateEntity completedState = loanStateRepository.findByName("Completado");
-        loan.setCurrentState(completedState);
+        // Actualiza el estado del préstamo según haya multas
+        if (haveFine) {
+            LoanStateEntity returned = loanStateRepository.findByName("Devuelto");
+            loan.setCurrentState(returned);
+        } else {
+            LoanStateEntity completed = loanStateRepository.findByName("Completado");
+            loan.setCurrentState(completed);
+        }
 
         LoanEntity savedLoan = loanRepository.save(loan);
         kardexRepository.save(newKardex);

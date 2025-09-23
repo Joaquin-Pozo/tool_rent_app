@@ -40,10 +40,4 @@ public class ToolEntity {
     private BigDecimal price;
 
     private int stock;
-
-    // Tool -> Loan
-    // hasta el momento no se ha ocupado este mapeo
-    //@OneToMany(mappedBy = "tool")
-    //private java.util.List<LoanEntity> loans;
-
 }

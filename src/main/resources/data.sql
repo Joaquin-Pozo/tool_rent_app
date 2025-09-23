@@ -1,21 +1,22 @@
 -- Estados del cliente
-INSERT IGNORE INTO client_states (name) VALUES ('Activo');
-INSERT IGNORE INTO client_states (name) VALUES ('Restringido');
+INSERT IGNORE INTO client_states (id, name) VALUES (1, 'Activo');
+INSERT IGNORE INTO client_states (id, name) VALUES (2, 'Restringido');
 
 -- Estados de la herramienta
-INSERT IGNORE INTO tool_states (name) VALUES ('Disponible');
-INSERT IGNORE INTO tool_states (name) VALUES ('Prestada');
-INSERT IGNORE INTO tool_states (name) VALUES ('En reparación');
-INSERT IGNORE INTO tool_states (name) VALUES ('Dada de baja');
+INSERT IGNORE INTO tool_states (id, name) VALUES (1, 'Disponible');
+INSERT IGNORE INTO tool_states (id, name) VALUES (2, 'Prestada');
+INSERT IGNORE INTO tool_states (id, name) VALUES (3, 'En reparación');
+INSERT IGNORE INTO tool_states (id, name) VALUES (4, 'Dada de baja');
 
 -- Estados del préstamo
-INSERT IGNORE INTO loan_states (name) VALUES ('En progreso');
-INSERT IGNORE INTO loan_states (name) VALUES ('Completado');
-INSERT IGNORE INTO loan_states (name) VALUES ('Atrasado');
+INSERT IGNORE INTO loan_states (id, name) VALUES (1, 'En progreso');
+INSERT IGNORE INTO loan_states (id, name) VALUES (2, 'Completado');
+INSERT IGNORE INTO loan_states (id, name) VALUES (3, 'Atrasado');
+INSERT IGNORE INTO loan_states (id, name) VALUES (4, 'Devuelto');
 
 -- Tipos de Kardex
-INSERT IGNORE INTO kardex_types (name) VALUES ('Ingreso');
-INSERT IGNORE INTO kardex_types (name) VALUES ('Préstamo');
-INSERT IGNORE INTO kardex_types (name) VALUES ('Devolución');
-INSERT IGNORE INTO kardex_types (name) VALUES ('Baja');
-INSERT IGNORE INTO kardex_types (name) VALUES ('Reparación');
+INSERT IGNORE INTO kardex_types (id, name) VALUES (1, 'Ingreso');
+INSERT IGNORE INTO kardex_types (id, name) VALUES (2, 'Préstamo');
+INSERT IGNORE INTO kardex_types (id, name) VALUES (3, 'Devolución');
+INSERT IGNORE INTO kardex_types (id, name) VALUES (4, 'Baja');
+INSERT IGNORE INTO kardex_types (id, name) VALUES (5, 'Reparación');

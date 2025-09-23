@@ -51,4 +51,11 @@ public class LoanController {
         BigDecimal fine = loanService.overdueFine(id);
         return ResponseEntity.ok(fine);
     }
+
+    // Paga la multa
+    @PutMapping("/payFine")
+    public ResponseEntity<LoanEntity> payLoanFine(@RequestBody LoanEntity loan) {
+        LoanEntity newLoan = loanService.payFine(loan);
+        return ResponseEntity.ok(newLoan);
+    }
 }
