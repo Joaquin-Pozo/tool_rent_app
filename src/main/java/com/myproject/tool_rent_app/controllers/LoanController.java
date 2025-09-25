@@ -62,13 +62,22 @@ public class LoanController {
         return ResponseEntity.ok(newLoan);
     }
 
-    // Obtiene las herramientas mas solicitadas
-    @GetMapping("/most-loaned-tools")
-    public ResponseEntity<List<Map<String, Object>>> getMostLoanedTools(
+    // Obtiene las herramientas mas solicitadas por rango de fechas
+    @GetMapping("/most-loaned-tools-by-date")
+    public ResponseEntity<List<Map<String, Object>>> getMostLoanedToolsByDate(
             @RequestParam(required=false) LocalDate fromDate,
             @RequestParam(required = false) LocalDate toDate) {
-        return ResponseEntity.ok(loanService.getMostLoanedTools(fromDate, toDate));
+        List<Map<String, Object>> tools = loanService.getMostLoanedToolsByDate(fromDate, toDate);
+        return ResponseEntity.ok(tools);
     }
+
+    // Obtiene las herramientas mas solicitadas por rango de fechas
+    @GetMapping("/most-loaned-tools")
+    public ResponseEntity<List<Map<String, Object>>> getMostLoanedTools() {
+        List<Map<String, Object>> tools = loanService.getMostLoanedTools();
+        return ResponseEntity.ok(tools);
+    }
+
     // Obtiene los clientes con prestamos atrasados
     @GetMapping("/clients-with-delays")
     public ResponseEntity<List<ClientEntity>> getClientsWithDelays() {
@@ -76,10 +85,18 @@ public class LoanController {
         return ResponseEntity.ok(clients);
     }
 
-    // Obtiene los clientes con prestamos atrasados
+    // Obtiene los clientes con prestamos activos
     @GetMapping("/active-loans")
     public ResponseEntity<List<LoanEntity>> getActiveLoans() {
         List<LoanEntity> loans = loanService.getActiveLoans();
+        return ResponseEntity.ok(loans);
+    }
+    // Obtiene los clientes con prestamos activos por rango de fechas
+    @GetMapping("/active-loans/filter")
+    public ResponseEntity<List<LoanEntity>> getActiveLoansByDate(
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate) {
+        List<LoanEntity> loans = loanService.getActiveLoansByDate(fromDate, toDate);
         return ResponseEntity.ok(loans);
     }
 

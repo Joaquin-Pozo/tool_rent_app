@@ -72,19 +72,39 @@ public class LoanService {
         return loanRepository.save(loan);
     }
 
-    // Obtiene en cada fila las herramientas prestadas con su id, nombre, cantidad de prestamos
-    public List<Map<String, Object>> getMostLoanedTools(LocalDate fromDate, LocalDate toDate) {
-        List <Object[]> raw = loanRepository.findMostLoanedTools(fromDate, toDate);
-        List<Map<String, Object>> list = new ArrayList<>();
-        for (Object[] row: raw) {
+    // Obtiene en cada fila del Object las herramientas prestadas con su id, nombre, cantidad de prestamos por rango de fecha
+    public List<Map<String, Object>> getMostLoanedToolsByDate(LocalDate fromDate, LocalDate toDate) {
+        List <Object[]> tools = loanRepository.findMostLoanedToolsByDateBetween(fromDate, toDate);
+        List<Map<String, Object>> toolsList = new ArrayList<>();
+        for (Object[] tool: tools) {
             Map<String, Object> map = new HashMap<>();
-            map.put("toolId", row[0]);
-            map.put("toolName", row[1]);
-            map.put("totalLoans", row[2]);
-            list.add(map);
+            map.put("toolId", tool[0]);
+            map.put("toolName", tool[1]);
+            map.put("totalLoans", tool[2]);
+            toolsList.add(map);
         }
-        return list;
+        return toolsList;
     }
+
+    // Obtiene en cada fila del Object las herramientas prestadas con su id, nombre, cantidad de prestamos
+    public List<Map<String, Object>> getMostLoanedTools() {
+        List <Object[]> tools = loanRepository.findMostLoanedTools();
+        List<Map<String, Object>> toolsList = new ArrayList<>();
+        for (Object[] tool: tools) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("toolId", tool[0]);
+            map.put("toolName", tool[1]);
+            map.put("totalLoans", tool[2]);
+            toolsList.add(map);
+        }
+        return toolsList;
+    }
+
+    // Obtiene todos los prestamos entre un rango de fechas
+    public List<LoanEntity> getActiveLoansByDate(LocalDate fromDate, LocalDate toDate) {
+        return loanRepository.findActiveLoansByDateBetween(fromDate, toDate);
+    }
+
     // Obtiene todos los clientes con préstamos atrasados
     public List<ClientEntity> getClientsWithDelays() {
         List<LoanEntity> delayedLoans = loanRepository.findLoanswithDelays();

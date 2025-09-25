@@ -1,6 +1,5 @@
 package com.myproject.tool_rent_app.repositories;
 
-import com.myproject.tool_rent_app.entities.ClientEntity;
 import com.myproject.tool_rent_app.entities.LoanEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -17,18 +16,37 @@ public interface LoanRepository extends JpaRepository<LoanEntity,Long> {
 
     List<LoanEntity> findByToolIdAndCurrentStateName(Long toolId, String currentStateName);
 
-    // Obtiene las herramientas mas solicitadas
+    // filtra por rango de fechas solamente a los prestamos activos
     @Query(value = """
-    SELECT l.tool_id as toolId, t.name as toolName, count(l.id) as totalLoans
+    SELECT l.*
     FROM loans l
-    INNER JOIN tools t on t.id = l.tool_id
-    WHERE (:fromDate IS NULL OR l.delivery_date >= :fromDate)
-    AND (:toDate IS NULL OR l.delivery_date <= :toDate)
-    GROUP BY l.tool_id, t.name
+    JOIN loan_states ls on ls.id = l.state_id
+    WHERE (ls.name = 'En Progreso' OR ls.name = 'Atrasado')
+    AND l.delivery_date BETWEEN :start AND :end
+    """, nativeQuery = true)
+    List<LoanEntity> findActiveLoansByDateBetween(LocalDate start, LocalDate end);
+
+    // Obtiene las herramientas mas solicitadas en un rango de fechas
+    @Query(value = """
+    SELECT t.id as toolId, t.name as toolname, count(l.id) as totalLoans
+    FROM loans l
+    JOIN tools t on t.id = l.tool_id
+    WHERE l.delivery_date BETWEEN :fromDate AND :toDate
+    GROUP BY l.tool_id
     ORDER BY COUNT(l.id) DESC;
     """, nativeQuery = true)
-    List<Object[]> findMostLoanedTools(@Param("fromDate") LocalDate fromDate,
+    List<Object[]> findMostLoanedToolsByDateBetween(@Param("fromDate") LocalDate fromDate,
                                        @Param("toDate") LocalDate  toDate);
+
+    // Obtiene las herramientas mas solicitadas
+    @Query(value = """
+    SELECT t.id as toolId, t.name as toolname, count(l.id) as totalLoans
+    FROM loans l
+    JOIN tools t on t.id = l.tool_id
+    GROUP BY l.tool_id
+    ORDER BY COUNT(l.id) DESC;
+    """, nativeQuery = true)
+    List<Object[]> findMostLoanedTools();
 
     // obtiene los prestamos con atrasos
     @Query(value = """
