@@ -44,7 +44,7 @@ public class KardexController {
             return ResponseEntity.ok(kardexService.getMovementsByToolAndDateRange(toolId, start, end));
         } else if (toolId != null) {
             return ResponseEntity.ok(kardexService.getMovementsByTool(toolId));
-        } else if (start != null &&  end != null) {
+        } else if (start != null && end != null) {
             return ResponseEntity.ok(kardexService.getMovementsByDateRange(start, end));
         } else {
             return ResponseEntity.ok(kardexService.getKardexs());

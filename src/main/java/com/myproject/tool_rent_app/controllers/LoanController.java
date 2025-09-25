@@ -62,18 +62,25 @@ public class LoanController {
         return ResponseEntity.ok(newLoan);
     }
 
-    // muestra las herramientas mas solicitadas
+    // Obtiene las herramientas mas solicitadas
     @GetMapping("/most-loaned-tools")
     public ResponseEntity<List<Map<String, Object>>> getMostLoanedTools(
             @RequestParam(required=false) LocalDate fromDate,
             @RequestParam(required = false) LocalDate toDate) {
         return ResponseEntity.ok(loanService.getMostLoanedTools(fromDate, toDate));
     }
-
-    // obtiene a los clientes con atrasos
+    // Obtiene los clientes con prestamos atrasados
     @GetMapping("/clients-with-delays")
     public ResponseEntity<List<ClientEntity>> getClientsWithDelays() {
-        return ResponseEntity.ok(loanService.getClientsWithDelays());
+        List<ClientEntity> clients = loanService.getClientsWithDelays();
+        return ResponseEntity.ok(clients);
+    }
+
+    // Obtiene los clientes con prestamos atrasados
+    @GetMapping("/active-loans")
+    public ResponseEntity<List<LoanEntity>> getActiveLoans() {
+        List<LoanEntity> loans = loanService.getActiveLoans();
+        return ResponseEntity.ok(loans);
     }
 
     // actualiza el estado de los prestamos atrasados

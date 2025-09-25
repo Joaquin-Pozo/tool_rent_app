@@ -36,10 +36,10 @@ public class LoanEntity {
     @JoinColumn(name = "state_id", nullable = false)
     private LoanStateEntity currentState;
 
-    @JsonFormat(pattern = "yyyy-MM-dd")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate deliveryDate;
 
-    @JsonFormat(pattern = "yyyy-MM-dd")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Column(nullable = false)
     private LocalDate returnDate;
 

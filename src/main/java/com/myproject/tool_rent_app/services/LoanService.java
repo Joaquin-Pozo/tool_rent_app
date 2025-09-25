@@ -85,10 +85,23 @@ public class LoanService {
         }
         return list;
     }
-
-    // Obtiene a los clientes con atrasos
+    // Obtiene todos los clientes con préstamos atrasados
     public List<ClientEntity> getClientsWithDelays() {
-        return loanRepository.findClientswithDelays();
+        List<LoanEntity> delayedLoans = loanRepository.findLoanswithDelays();
+
+        List<ClientEntity> clientsWithDelays = new ArrayList<>();
+
+        for (LoanEntity loan : delayedLoans) {
+            if (!clientsWithDelays.contains(loan.getClient())) {
+                clientsWithDelays.add(loan.getClient());
+            }
+        }
+        return clientsWithDelays;
+    }
+
+    // Obtiene todos los prestamos en curso
+    public List<LoanEntity> getActiveLoans() {
+        return loanRepository.findActiveLoans();
     }
 
     // RF2.1 Registrar un préstamo asociando cliente y herramienta, con fecha de entrega y
@@ -223,18 +236,18 @@ public class LoanService {
 
     // Actualiza el estado de los préstamos atrasados
     public List<LoanEntity> updateOverdueLoans() {
-        List<LoanEntity> loanEntities = loanRepository.findAll();
+        List<LoanEntity> loans = loanRepository.findAll();
         LocalDate today = LocalDate.now();
         List<LoanEntity> updatedLoans = new ArrayList<>();
 
-        for (LoanEntity loanEntity : loanEntities) {
-            LocalDate returnDate = loanEntity.getReturnDate();
-            String currentLoanState = loanEntity.getCurrentState().getName();
+        for (LoanEntity loan : loans) {
+            LocalDate returnDate = loan.getReturnDate();
+            String currentLoanState = loan.getCurrentState().getName();
 
             if (today.isAfter(returnDate) && currentLoanState.equals("En progreso")) {
                 LoanStateEntity newLoanState = loanStateRepository.findByName("Atrasado");
-                loanEntity.setCurrentState(newLoanState);
-                updatedLoans.add(loanRepository.save(loanEntity));
+                loan.setCurrentState(newLoanState);
+                updatedLoans.add(loanRepository.save(loan));
             }
         }
         return updatedLoans;

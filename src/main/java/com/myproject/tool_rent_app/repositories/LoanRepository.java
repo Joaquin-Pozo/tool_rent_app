@@ -30,11 +30,21 @@ public interface LoanRepository extends JpaRepository<LoanEntity,Long> {
     List<Object[]> findMostLoanedTools(@Param("fromDate") LocalDate fromDate,
                                        @Param("toDate") LocalDate  toDate);
 
-    // obtiene a los clientes con atrasos
-    @Query(value = "SELECT DISTINCT c.name " +
-            "FROM loans l " +
-            "JOIN loan_states ls on ls.id = l.state_id " +
-            "JOIN clients c on c.id = l.client_id " +
-            "WHERE ls.name = 'Atrasado' ", nativeQuery = true)
-    List<ClientEntity> findClientswithDelays();
+    // obtiene los prestamos con atrasos
+    @Query(value = """
+    SELECT l.*
+    FROM loans l
+    JOIN loan_states ls on ls.id = l.state_id
+    WHERE ls.name = 'Atrasado'
+    """, nativeQuery = true)
+    List<LoanEntity> findLoanswithDelays();
+
+    // obtiene los prestamos 'En progreso' o 'Atrasado'
+    @Query(value = """
+    SELECT l.*
+    FROM loans l
+    JOIN loan_states ls on ls.id = l.state_id
+    WHERE ls.name = 'En progreso' OR ls.name = 'Atrasado'
+    """, nativeQuery = true)
+    List<LoanEntity> findActiveLoans();
 }

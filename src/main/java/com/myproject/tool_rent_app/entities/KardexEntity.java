@@ -38,7 +38,7 @@ public class KardexEntity {
     @Column(nullable = false)
     private int quantity;
 
-    @JsonFormat(pattern = "yyyy-MM-dd")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Column(nullable = false)
     private LocalDate movementDate;
 
