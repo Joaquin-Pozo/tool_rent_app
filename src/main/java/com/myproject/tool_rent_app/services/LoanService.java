@@ -203,6 +203,9 @@ public class LoanService {
         if (tool.getCurrentState().getName().equals("Dada de baja")) {
             throw new RuntimeException("La herramienta solicitada se encuentra dada de baja");
         }
+        if (tool.getCurrentState().getName().equals("Prestada")) {
+            throw new RuntimeException(("La herramienta solicitada ya se encuentra prestada y no ha sido devuelta"));
+        }
 
         // Validación de fechas (entrega <= devolucion)
         if (loan.getDeliveryDate() == null || loan.getReturnDate() == null) {
