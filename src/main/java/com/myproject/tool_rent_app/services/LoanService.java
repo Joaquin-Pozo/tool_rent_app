@@ -174,6 +174,15 @@ public class LoanService {
                     }
                     throw new RuntimeException("El cliente tiene multas impagas por préstamos atrasados");
                 }
+                // Verifica si el cliente se encuentra atrasado con prestamos anteriores
+                if (prevLoan.getCurrentState().getName().equals("Atrasado")) {
+                    if (client.getCurrentState().getName().equals(activeState)) {
+                        // Si el cliente tiene prestamos atrasados y esta en estado 'Activo', actualiza su estado a restringido
+                        clientService.changeClientState(client.getId(), restrictedState);
+                    }
+                    throw new RuntimeException("El cliente tiene préstamos atrasados");
+                }
+
                 // Verifica si el cliente dañó la herramienta y no ha pagado la multa
                 if (prevLoan.isDamaged() && !prevLoan.getCurrentState().getName().equals("Completado")) {
                     if (client.getCurrentState().getName().equals(activeState)) {
